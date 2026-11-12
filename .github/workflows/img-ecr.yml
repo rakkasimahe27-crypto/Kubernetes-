@@ -1,0 +1,53 @@
+name: Build and Push Multi-Images to ECR
+on: workflow_dispatch
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/sri-oidc
+  TARGET_ENV: ${{ vars.ENVIRONMENT }}
+  BASE_DIR: Day-9-Ingress-Path-Base-Deployment
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC authentication
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+        
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, Tag, and Push Images
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Define folders (which are also the exact ECR repository names)
+          SERVICES=("main" "aws" "gcp" "azure")
+
+          for SERVICE in "${SERVICES[@]}"; do
+            echo "========================================="
+            echo "Processing Folder & ECR Repo: $SERVICE"
+            echo "========================================="
+            
+            # Navigate to the specific directory using absolute GitHub workspace path
+            cd "${{ github.workspace }}/${{ env.BASE_DIR }}/$SERVICE"
+            
+            # Build and tag
+            docker build -t $ECR_REGISTRY/$SERVICE:latest -t $ECR_REGISTRY/$SERVICE:$IMAGE_TAG .
+            
+            # Push all tags to ECR
+            docker push -a $ECR_REGISTRY/$SERVICE
+            
+          done
