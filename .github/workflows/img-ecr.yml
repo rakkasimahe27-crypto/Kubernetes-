@@ -4,10 +4,11 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_REGION: us-east-1
   AWS_ROLE_ARN: arn:aws:iam::960631463530:role/mahe-oidc
   TARGET_ENV: ${{ vars.ENVIRONMENT }}
-  REPOSITORY_ID: ${{ github.repository }}
+  REPOSITORY_ID: ${{ github.repository_id }}
+  REPOSITORY_NAME: ${{ github.repository }}
   FOLDER_NAME: Day-9-Ingress-Path-Base-Deployment
 
 jobs:
@@ -19,6 +20,7 @@ jobs:
       contents: read
 
     steps:
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -26,13 +28,19 @@ jobs:
         run: |
           echo "Repository: ${{ github.repository }}"
           echo "Repository ID: ${{ github.repository_id }}"
+          echo "Repository Owner: ${{ github.repository_owner }}"
           echo "Folder: ${{ env.FOLDER_NAME }}"
+          echo "Environment: ${{ env.TARGET_ENV }}"
 
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -42,12 +50,15 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
+
         run: |
           SERVICES=("main" "aws" "gcp" "azure")
 
           for SERVICE in "${SERVICES[@]}"; do
 
+            echo "=================================="
             echo "Processing: $SERVICE"
+            echo "=================================="
 
             cd "${GITHUB_WORKSPACE}/${FOLDER_NAME}/${SERVICE}"
 
