@@ -46,15 +46,30 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, Tag, and Push Images
-        env:
+       - name: Build, Tag, and Push Images
+         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
-        run: |
+         run: |
           BASE_DIR="${GITHUB_WORKSPACE}/${FOLDER_NAME}"
-          SERVICES=("aws" "gcp" "azure")
+          SERVICES=("aws" "gcp" "azure") # Add "main" back only if a main/ folder exists
 
           for SERVICE in "${SERVICES[@]}"; do
+            TARGET_DIR="${BASE_DIR}/${SERVICE}"
             echo "=================================="
-            echo
+            echo "Processing: $SERVICE ($TARGET_DIR)"
+            echo "=================================="
+
+            if [ ! -d "$TARGET_DIR" ]; then
+              echo "Error: Directory $TARGET_DIR not found!"
+              exit 1
+            fi
+
+            cd "$TARGET_DIR"
+            docker build \
+              -t "${ECR_REGISTRY}/${SERVICE}:latest" \
+              -t "${ECR_REGISTRY}/${SERVICE}:${IMAGE_TAG}" .
+
+            docker push -a "${ECR_REGISTRY}/${SERVICE}"
+            cd "${GITHUB_WORKSPACE}"
+          done
