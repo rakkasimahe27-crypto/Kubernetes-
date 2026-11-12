@@ -3,7 +3,7 @@ on: workflow_dispatch
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/sri-oidc
+  AWS_ROLE_ARN: arn:aws:iam::960631463530:role/mahe-oidc
   TARGET_ENV: ${{ vars.ENVIRONMENT }}
   BASE_DIR: Day-9-Ingress-Path-Base-Deployment
 
