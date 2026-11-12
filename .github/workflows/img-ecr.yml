@@ -20,7 +20,6 @@ jobs:
       contents: read
 
     steps:
-
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -50,24 +49,10 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
-
         run: |
-          SERVICES=("main" "aws" "gcp" "azure")
+          BASE_DIR="${GITHUB_WORKSPACE}/${FOLDER_NAME}"
+          SERVICES=("aws" "gcp" "azure")
 
           for SERVICE in "${SERVICES[@]}"; do
-
             echo "=================================="
-            echo "Processing: $SERVICE"
-            echo "=================================="
-
-            cd "${GITHUB_WORKSPACE}/${FOLDER_NAME}/${SERVICE}"
-
-            docker build \
-              -t "${ECR_REGISTRY}/${SERVICE}:latest" \
-              -t "${ECR_REGISTRY}/${SERVICE}:${IMAGE_TAG}" .
-
-            docker push -a "${ECR_REGISTRY}/${SERVICE}"
-
-            cd "${GITHUB_WORKSPACE}"
-
-          done
+            echo
