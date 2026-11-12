@@ -30,6 +30,8 @@ jobs:
           echo "Repository Owner: ${{ github.repository_owner }}"
           echo "Folder: ${{ env.FOLDER_NAME }}"
           echo "Environment: ${{ env.TARGET_ENV }}"
+          - name: List Workspace Contents
+            run: ls -R ${GITHUB_WORKSPACE}
 
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
